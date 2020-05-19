@@ -1,11 +1,12 @@
 {
   "version": 2,
-  "dgSpecHash": "XkNkeilYTKWIJHsiQPumT/EgxFTe/d8ckh2dxdaFVMgTbB80a6x19yR/oDtsDO6OA/kSaNDlnzDG8wZAnWbzgQ==",
+  "dgSpecHash": "4rBO29iHwQa9Sa9gEYB3QWLTgw0B7xoe0VicFYDYS9u23JRIYjOei6Etk0Rvxs7CNP16o8Gi3I8ynE+86YviFg==",
   "success": true,
-  "projectFilePath": "C:\\AddvalsApi\\AddvalsApi.csproj",
+  "projectFilePath": "C:\\GitHub\\AddvalsApi\\AddvalsApi.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\El Ayadi Ilias\\.nuget\\packages\\automapper\\9.0.0\\automapper.9.0.0.nupkg.sha512",
     "C:\\Users\\El Ayadi Ilias\\.nuget\\packages\\automapper.extensions.microsoft.dependencyinjection\\7.0.0\\automapper.extensions.microsoft.dependencyinjection.7.0.0.nupkg.sha512",
+    "C:\\Users\\El Ayadi Ilias\\.nuget\\packages\\microsoft.aspnetcore.authentication.google\\3.1.4\\microsoft.aspnetcore.authentication.google.3.1.4.nupkg.sha512",
     "C:\\Users\\El Ayadi Ilias\\.nuget\\packages\\microsoft.aspnetcore.cors\\2.2.0\\microsoft.aspnetcore.cors.2.2.0.nupkg.sha512",
     "C:\\Users\\El Ayadi Ilias\\.nuget\\packages\\microsoft.aspnetcore.http.abstractions\\2.2.0\\microsoft.aspnetcore.http.abstractions.2.2.0.nupkg.sha512",
     "C:\\Users\\El Ayadi Ilias\\.nuget\\packages\\microsoft.aspnetcore.http.extensions\\2.2.0\\microsoft.aspnetcore.http.extensions.2.2.0.nupkg.sha512",

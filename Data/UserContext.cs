@@ -7,7 +7,6 @@ namespace AddvalsApi.Data
     {
         public UserContext(DbContextOptions<UserContext> opt) : base(opt)
         {
-
         }
 
         public DbSet<UserModel> Users {get; set;}

@@ -9,8 +9,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AddvalsApi.Migrations
 {
     [DbContext(typeof(UserContext))]
-    [Migration("20200429163142_InitialMigration")]
-    partial class InitialMigration
+    [Migration("20200518132809_TokenMigration")]
+    partial class TokenMigration
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -39,15 +39,15 @@ namespace AddvalsApi.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-/*                     b.Property<string>("Token")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)"); */
-
                     b.Property<string>("Login")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Password")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Token")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 

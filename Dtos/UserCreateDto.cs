@@ -20,6 +20,8 @@ namespace AddvalsApi.Dtos
         //[Required]
         public string LastName { get; set; }
 
+        public string Token { get; set; }
+
 
    
     }

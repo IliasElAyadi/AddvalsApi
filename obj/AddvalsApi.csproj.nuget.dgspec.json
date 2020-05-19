@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\AddvalsApi\\AddvalsApi.csproj": {}
+    "C:\\GitHub\\AddvalsApi\\AddvalsApi.csproj": {}
   },
   "projects": {
-    "C:\\AddvalsApi\\AddvalsApi.csproj": {
+    "C:\\GitHub\\AddvalsApi\\AddvalsApi.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\AddvalsApi\\AddvalsApi.csproj",
+        "projectUniqueName": "C:\\GitHub\\AddvalsApi\\AddvalsApi.csproj",
         "projectName": "AddvalsApi",
-        "projectPath": "C:\\AddvalsApi\\AddvalsApi.csproj",
+        "projectPath": "C:\\GitHub\\AddvalsApi\\AddvalsApi.csproj",
         "packagesPath": "C:\\Users\\El Ayadi Ilias\\.nuget\\packages\\",
-        "outputPath": "C:\\AddvalsApi\\obj\\",
+        "outputPath": "C:\\GitHub\\AddvalsApi\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"
@@ -44,6 +44,10 @@
             "AutoMapper.Extensions.Microsoft.DependencyInjection": {
               "target": "Package",
               "version": "[7.0.0, )"
+            },
+            "Microsoft.AspNetCore.Authentication.Google": {
+              "target": "Package",
+              "version": "[3.1.4, )"
             },
             "Microsoft.AspNetCore.Cors": {
               "target": "Package",

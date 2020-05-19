@@ -7,6 +7,7 @@ using AutoMapper;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -14,6 +15,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Serialization;
+
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Google;
+
+
 namespace AddvalsApi
 {
     public class Startup
@@ -30,21 +36,22 @@ namespace AddvalsApi
         {
 
             services.AddCors(options => options.AddPolicy("ApiCorsPolicy", build =>
-            {                
-              build.WithOrigins("http://localhost:4200")
-             .AllowAnyMethod()
-             .AllowAnyHeader();
+            {
+                build.WithOrigins("http://localhost:4200")
+               .AllowAnyMethod()
+               .AllowAnyHeader();
             }));
 
             services.AddDbContext<UserContext>(opt => opt.UseSqlServer(Configuration.GetConnectionString("CommanderConnection")));
 
-            services.AddControllers().AddNewtonsoftJson(s => {
+            services.AddControllers().AddNewtonsoftJson(s =>
+            {
                 s.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
             });
 
             services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
-            
-            services.AddScoped<IUserRepo,SqlUserRepo>();
+
+            services.AddScoped<IUserRepo, SqlUserRepo>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -56,7 +63,7 @@ namespace AddvalsApi
             }
 
             app.UseCors("ApiCorsPolicy");
-         
+
             app.UseHttpsRedirection();
 
             app.UseRouting();

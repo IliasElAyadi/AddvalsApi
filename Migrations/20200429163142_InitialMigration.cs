@@ -16,7 +16,8 @@ namespace AddvalsApi.Migrations
                     Password = table.Column<string>(nullable: false),
                     Email = table.Column<string>(nullable: false),
                     FirstName = table.Column<string>(nullable: false),
-                    LastName = table.Column<string>(nullable: false)
+                    LastName = table.Column<string>(nullable: false),
+                    //Token = table.Column<string>(nullable: false)
                 },
                 constraints: table =>
                 {

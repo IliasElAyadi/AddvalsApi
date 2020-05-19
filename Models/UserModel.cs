@@ -22,6 +22,9 @@ namespace AddvalsApi.Model
         [Required]
         public string LastName { get; set; }
 
+        [Required]
+        public string Token { get; set; }
+
         
 
     }

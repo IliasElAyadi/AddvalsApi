@@ -24,6 +24,11 @@ namespace AddvalsApi.Data
           return _context.Users.FirstOrDefault(p => p.Id == id);
         }
 
+        public UserModel GetUserByLogin(string login)
+        {
+            return _context.Users.FirstOrDefault(p => p.Login == login);
+        }
+
          public void CreatUser(UserModel user)
         {
             if(user == null)
@@ -54,6 +59,6 @@ namespace AddvalsApi.Data
            return (_context.SaveChanges() >= 0);
         }
 
-       
+
     }
 }
