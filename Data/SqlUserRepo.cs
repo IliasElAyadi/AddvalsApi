@@ -16,12 +16,12 @@ namespace AddvalsApi.Data
 
         IEnumerable<UserModel> IUserRepo.GetAllUsers()
         {
-           return _context.Users.ToList();
+            return _context.Users.ToList();
         }
 
         UserModel IUserRepo.GetUserById(int id)
         {
-          return _context.Users.FirstOrDefault(p => p.Id == id);
+            return _context.Users.FirstOrDefault(p => p.Id == id);
         }
 
         public UserModel GetUserByLogin(string login)
@@ -29,9 +29,14 @@ namespace AddvalsApi.Data
             return _context.Users.FirstOrDefault(p => p.Login == login);
         }
 
-         public void CreatUser(UserModel user)
+         public UserModel GetUserByLoginAndPassword(string login, string password)
         {
-            if(user == null)
+            return _context.Users.FirstOrDefault(x => x.Login == login  && x.Password == password );
+        } 
+
+        public void CreatUser(UserModel user)
+        {
+            if (user == null)
             {
                 throw new ArgumentNullException(nameof(user));
             }
@@ -45,18 +50,18 @@ namespace AddvalsApi.Data
 
         public void DeleteUser(UserModel user)
         {
-            if(user == null)
+            if (user == null)
             {
                 throw new ArgumentNullException(nameof(user));
             }
 
             _context.Users.Remove(user);
         }
-        
+
 
         public bool SaveChanges()
         {
-           return (_context.SaveChanges() >= 0);
+            return (_context.SaveChanges() >= 0);
         }
 
 

@@ -9,9 +9,10 @@ namespace AddvalsApi.Data
         IEnumerable<UserModel> GetAllUsers();
         UserModel GetUserById(int id);
         UserModel GetUserByLogin(string login);
+        UserModel GetUserByLoginAndPassword(string login, string password);
         void CreatUser(UserModel user);
         void UpdateUser(UserModel user);
         void DeleteUser(UserModel user);
-        
+
     }
 }

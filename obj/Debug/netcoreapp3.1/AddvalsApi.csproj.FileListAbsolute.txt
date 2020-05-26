@@ -115,3 +115,13 @@ C:\GitHub\AddvalsApi\obj\Debug\netcoreapp3.1\AddvalsApi.dll
 C:\GitHub\AddvalsApi\obj\Debug\netcoreapp3.1\AddvalsApi.pdb
 C:\GitHub\AddvalsApi\obj\Debug\netcoreapp3.1\AddvalsApi.genruntimeconfig.cache
 C:\GitHub\AddvalsApi\bin\Debug\netcoreapp3.1\Microsoft.AspNetCore.Authentication.Google.dll
+C:\GitHub\AddvalsApi\bin\Debug\netcoreapp3.1\MailKit.dll
+C:\GitHub\AddvalsApi\bin\Debug\netcoreapp3.1\MimeKit.dll
+C:\GitHub\AddvalsApi\bin\Debug\netcoreapp3.1\BouncyCastle.Crypto.dll
+C:\GitHub\AddvalsApi\bin\Debug\netcoreapp3.1\Microsoft.AspNetCore.Authentication.JwtBearer.dll
+C:\GitHub\AddvalsApi\bin\Debug\netcoreapp3.1\Microsoft.IdentityModel.JsonWebTokens.dll
+C:\GitHub\AddvalsApi\bin\Debug\netcoreapp3.1\Microsoft.IdentityModel.Logging.dll
+C:\GitHub\AddvalsApi\bin\Debug\netcoreapp3.1\Microsoft.IdentityModel.Protocols.dll
+C:\GitHub\AddvalsApi\bin\Debug\netcoreapp3.1\Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
+C:\GitHub\AddvalsApi\bin\Debug\netcoreapp3.1\Microsoft.IdentityModel.Tokens.dll
+C:\GitHub\AddvalsApi\bin\Debug\netcoreapp3.1\System.IdentityModel.Tokens.Jwt.dll

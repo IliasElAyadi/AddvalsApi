@@ -23,17 +23,17 @@ namespace AddvalsApi.Controllers
         [HttpPost]
         public async Task<SkytapModelDeux> addSkytap(UserCreateDto user)
         {
-            Console.WriteLine("1TESTTTSTSTSTSTSTSTESTTTSTSTSTSTSTS");
+
             SkytapModel skytapModel = new SkytapModel
             {
                 account_role = "admin",
                 login_name = user.Login,
                 email = user.Email,
             };
-            Console.WriteLine("2TESTTTSTSTSTSTSTSTESTTTSTSTSTSTSTS");
+
 
             SkytapModelDeux SkyRep;
-            Console.WriteLine("3TESTTTSTSTSTSTSTSTESTTTSTSTSTSTSTS");
+
 
             using (var httpClient = new HttpClient())
             {
