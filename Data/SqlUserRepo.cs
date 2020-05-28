@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using AddvalsApi.Dtos;
 using AddvalsApi.Model;
 
 namespace AddvalsApi.Data
@@ -24,14 +25,14 @@ namespace AddvalsApi.Data
             return _context.Users.FirstOrDefault(p => p.Id == id);
         }
 
-        public UserModel GetUserByLogin(string login)
+        public UserModel GetUserByEmail(string email)
         {
-            return _context.Users.FirstOrDefault(p => p.Login == login);
+            return _context.Users.FirstOrDefault(p => p.Email == email);
         }
 
-         public UserModel GetUserByLoginAndPassword(string login, string password)
+         public UserModel GetUserByEmailAndPassword(string email, string password)
         {
-            return _context.Users.FirstOrDefault(x => x.Login == login  && x.Password == password );
+            return _context.Users.FirstOrDefault(x => x.Email == email  && x.Password == password );
         } 
 
         public void CreatUser(UserModel user)
@@ -63,7 +64,5 @@ namespace AddvalsApi.Data
         {
             return (_context.SaveChanges() >= 0);
         }
-
-
     }
 }

@@ -15,16 +15,12 @@ namespace WebApi.Services
     public interface IUserService
     {
         UserModel Authenticate(string login, string password);
-        IEnumerable<User> GetAll();
+       
     }
 
     public class UserService : IUserService
     {
         // users hardcoded for simplicity, store in a db with hashed passwords in production applications
-        private List<User> _users = new List<User>
-        {
-            new User { Id = 1, FirstName = "Test", LastName = "User", Login = "test", Password = "test" }
-        };
 
         private readonly AppSettings _appSettings;
         private readonly IUserRepo _repository;
@@ -35,11 +31,11 @@ namespace WebApi.Services
             _repository = repository;
         }
 
-        public UserModel Authenticate(string login, string password)
+        public UserModel Authenticate(string email, string password)
         {
-            
+          
             //var user = _users.SingleOrDefault(x => x.Login == login && x.Password == password);
-            UserModel user =_repository.GetUserByLoginAndPassword(login,password);
+            UserModel user =_repository.GetUserByEmailAndPassword(email,password);
 
             // return null if user not found
             if (user == null)
@@ -54,7 +50,7 @@ namespace WebApi.Services
                 {
                     new Claim(ClaimTypes.Name, user.Id.ToString())
                 }),
-                Expires = DateTime.UtcNow.AddDays(7),
+                Expires = DateTime.UtcNow.AddHours(24),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
             var token = tokenHandler.CreateToken(tokenDescriptor);
@@ -62,13 +58,6 @@ namespace WebApi.Services
 
             return user;
         }
-
-
-        public IEnumerable<User> GetAll()
-        {
-            return _users;
-        }
-
 
     }
 }
