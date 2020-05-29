@@ -118,7 +118,7 @@ namespace AddvalsApi.Controllers
                 Email = user.Email,
                 password = user.Password
             };
-            
+
             UserModel userComplet = await Authenticate(authenticateModel);
 
 
@@ -140,9 +140,9 @@ namespace AddvalsApi.Controllers
                 SkytapDataEnviroModel skytapDataEnviroModel = await CreateEnviroSkytap(user, skytapModelToken.api_token);
                 Console.WriteLine("/CREATE");
             }
-
+           
             EnviroVmUrl enviroVmUrl = await GetEnviroSkytap(user, skytapModelToken.api_token);
-
+            await shutdown_on_idle(user, enviroVmUrl.enviro, skytapModelToken.api_token);
             await UpdateStatsSkytap(user, enviroVmUrl.enviro, skytapModelToken.api_token);
 
             Console.WriteLine("-----------------------------------------");
@@ -262,7 +262,7 @@ namespace AddvalsApi.Controllers
             await UpdateUser(userComplet);
             //UserModel currentUser = await GetUserDb(user.Email);
 
-            String UrlChangePassword = $"http://localhost:4200/profil/";
+            String UrlChangePassword = $"http://localhost:4200/profil/{user.Email}";
             ActionResult actionResult = SendEmail(UrlChangePassword, user);
 
             Console.WriteLine("Fin");
@@ -559,6 +559,7 @@ namespace AddvalsApi.Controllers
               {"template_id", 1899007},
             };
 
+
             //Console.WriteLine(user.Email + "  " +token);
 
             using (var httpClient = new HttpClient())
@@ -567,15 +568,16 @@ namespace AddvalsApi.Controllers
                 httpClient.DefaultRequestHeaders.Clear();
                 httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", authString2);
 
-                StringContent content = new StringContent(JsonConvert.SerializeObject(payload1), Encoding.UTF8, "application/json");
+                StringContent content1 = new StringContent(JsonConvert.SerializeObject(payload1), Encoding.UTF8, "application/json");
 
-                using (var response = await httpClient.PostAsync("https://cloud.skytap.com/configurations.json", content))
+                using (var response = await httpClient.PostAsync("https://cloud.skytap.com/configurations.json", content1))
                 {
                     //Console.WriteLine(response.StatusCode);
                     string apiResponse = await response.Content.ReadAsStringAsync();
                     skytapDataEnviroModel = JsonConvert.DeserializeObject<SkytapDataEnviroModel>(apiResponse);
                     //Console.WriteLine("enviro :" + apiResponse);
                 }
+
             }
             return skytapDataEnviroModel;
         }
@@ -745,9 +747,44 @@ namespace AddvalsApi.Controllers
                         break;
                     }
                 }
+
             }
             EnviroVmUrl enviroVmUrl = await GetVmsSkytap(user, token, enviroId);
             return enviroVmUrl;
+        }
+
+
+
+
+        [HttpPut]
+        public async Task<SkytapModelDeux> shutdown_on_idle(UserCreateDto user, String enviro, String token)
+        {
+            string dat1 = new DateTime().ToString();
+            var payload1 = new Dictionary<string, int>
+            {
+               {"shutdown_on_idle",2000 }, 
+             //{"shutdown_at_time", "2020/05/29 13:25:00" },
+              
+            };
+
+            using (var httpClient = new HttpClient())
+            {
+                var authString = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{user.Email}:{token}"));
+                httpClient.DefaultRequestHeaders.Clear();
+                httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", authString);
+                httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
+
+                StringContent content = new StringContent(JsonConvert.SerializeObject(payload1), Encoding.UTF8, "application/json");
+
+                using (var response = await httpClient.PutAsync($"https://cloud.skytap.com/configurations/{enviro}.json", content))
+                {
+                    Console.WriteLine("atttenttionsdqsd = " + response.StatusCode);
+                    string apiResponse = await response.Content.ReadAsStringAsync();
+                    // skytapDataEnviroModel = JsonConvert.DeserializeObject<SkytapDataEnviroModel>(apiResponse);
+                    //Console.WriteLine("enviro :" + apiResponse);
+                }
+            }
+            return null;
         }
 
         [HttpGet]
