@@ -1,4 +1,4 @@
-# AddvalsApi
+# AddvalsApi en .NetCore 3.1
 
 ## La DB (SQL server)
 https://we.tl/t-TAotUDKL18
