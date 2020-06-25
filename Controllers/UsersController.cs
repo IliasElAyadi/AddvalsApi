@@ -39,6 +39,7 @@ namespace AddvalsApi.Controllers
             _userService = userService;
         }
 
+        /* Authentication */
         [AllowAnonymous]
         [HttpPost("/api/user/authenticate")]
         public async Task<UserModel> Authenticate([FromBody] AuthenticateModel model)
@@ -52,7 +53,7 @@ namespace AddvalsApi.Controllers
             return user;
         }
 
-
+        /* Récupère tous les utilisateurs */
         [AllowAnonymous]
         [HttpGet("/api/user")]
         public ActionResult<IEnumerable<UserReadDto>> GetAllUsers()
@@ -61,6 +62,7 @@ namespace AddvalsApi.Controllers
             return Ok(_mapper.Map<IEnumerable<UserReadDto>>(users));
         }
 
+        /* Récupère USER par ID*/
         [HttpGet("/api/user/{id}", Name = "GetUserById")]
         public ActionResult<UserReadDto> GetUserById(int id)
         {
@@ -73,7 +75,7 @@ namespace AddvalsApi.Controllers
 
             return Ok(_mapper.Map<UserReadDto>(user));
         }
-
+        /* Récupère USER par email*/
         [HttpGet]
         public async Task<UserModel> GetUserDb(string email)
         {
@@ -89,6 +91,8 @@ namespace AddvalsApi.Controllers
             return user;
 
         }
+
+        /* Récupère TokenSkytap Par Email*/
 
         [HttpGet]
         public async Task<SkytapModelToken> GetTokenDb(string email)
@@ -107,12 +111,11 @@ namespace AddvalsApi.Controllers
             return SkytapModelToken;
         }
 
+        /* Connexion de l'utilisateur*/
         [AllowAnonymous]
         [HttpPost("/api/user/signin")]
         public async Task<ActionResult<string>> UserSignIn(UserCreateDto user)
         {
-            Console.WriteLine(user.Email);
-
             AuthenticateModel authenticateModel = new AuthenticateModel
             {
                 Email = user.Email,
@@ -125,11 +128,10 @@ namespace AddvalsApi.Controllers
             SkytapModelToken skytapModelToken = await GetTokenDb(user.Email);
             user.Email = user.Email + "addvals";
             user.Login = user.Email;
-            Console.WriteLine(user.Email);
-            Console.WriteLine(skytapModelToken.api_token);
 
             try
             {
+                /* récupère l'enviro si il existe, le supprime et en crée un nouveau */
                 EnviroVmUrl enviroEtVm1 = await GetEnviroSkytap(user, skytapModelToken.api_token);
                 await DeleteEnviroSkytap(user, skytapModelToken.api_token, enviroEtVm1.enviro);
                 SkytapDataEnviroModel skytapDataEnviroModel = await CreateEnviroSkytap(user, skytapModelToken.api_token);
@@ -137,12 +139,16 @@ namespace AddvalsApi.Controllers
             }
             catch (System.Exception)
             {
+                /* création d'environnement */
                 SkytapDataEnviroModel skytapDataEnviroModel = await CreateEnviroSkytap(user, skytapModelToken.api_token);
                 Console.WriteLine("/CREATE");
             }
-           
+
+            /* récupère les informations de l'environnement */
             EnviroVmUrl enviroVmUrl = await GetEnviroSkytap(user, skytapModelToken.api_token);
+            /* arret automatique (BETA) */
             await shutdown_on_idle(user, enviroVmUrl.enviro, skytapModelToken.api_token);
+            /* Lancement de la machine */
             await UpdateStatsSkytap(user, enviroVmUrl.enviro, skytapModelToken.api_token);
 
             Console.WriteLine("-----------------------------------------");
@@ -151,88 +157,65 @@ namespace AddvalsApi.Controllers
             Console.WriteLine("ENVIRO : " + enviroVmUrl.enviro);
             Console.WriteLine("VM : " + enviroVmUrl.vm);
 
-
+            /* Création de la machine partagé */
             string ok = await CreateSharingSkytap(user, skytapModelToken.api_token, enviroVmUrl.enviro);
-
+            /* Récupère l'URL de la machine partagé */
             SharingUrl sharingUrl = await GetSharing(user, skytapModelToken.api_token, enviroVmUrl.enviro);
-
-
+            /* récupère les informations de l'environnement */
             EnviroVmUrl urlFinal = await GetEnviroSkytap(user, skytapModelToken.api_token);
-
-
+            /* Maj des access de la machine partagé*/
             await UpdateAccesSharingSkytap(user, skytapModelToken.api_token, enviroVmUrl.enviro, enviroVmUrl.vm, sharingUrl.id);
-
-            //string url_final = $"https://cloud.skytap.com/configurations/{enviroVmUrl.enviro}/desktop?vm_id={enviroVmUrl.vm}";
-            //https://cloud.skytap.com/vms/58c58bc3223782dea7438ad322c8beae/desktops?vm_id=22043645
-
-            // string pageWeb = await GetWebPage(user, skytapModelToken.api_token);
 
             Console.WriteLine("-----------------------------------------");
             Console.WriteLine("URL : " + urlFinal.url);
             Console.WriteLine("-----------------------------------------");
 
-
             return Ok($"{{\"url\":\"{urlFinal.url}\"}}");
 
-            //return Ok($"{{\"url\":\"{pageWeb}\"}}");
-
-            //////////SkyTap//////////////
-            //return CreatedAtRoute(nameof(GetUserById), new {Id = UserReadDto.Id}, UserReadDto); //Renvoi la route pour GetUserById
-            //return Ok(UserReadDto);
         }
 
 
-        [HttpGet]
-        public async Task<string> GetWebPage(UserCreateDto user, string token)
-        {
-            string apiResponse;
-            SkytapModelToken skytapModelToken = await GetTokenDb(user.Email);
-            EnviroVmUrl enviroVmUrl = await GetEnviroSkytap(user, skytapModelToken.api_token);
-
-            using (var httpClient = new HttpClient())
-            {
-                var authString2 = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{user.Email}:{token}"));
-                httpClient.DefaultRequestHeaders.Clear();
-                httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", authString2);
-
-
-                using (var response = await httpClient.GetAsync($"https://cloud.skytap.com/configurations/{enviroVmUrl.enviro}/desktop?vm_id={enviroVmUrl.vm}"))
+        /*         [HttpGet]
+                public async Task<string> GetWebPage(UserCreateDto user, string token)
                 {
-                    //Console.WriteLine(response.StatusCode);
-                    apiResponse = await response.Content.ReadAsStringAsync();
-                    //Console.WriteLine(apiResponse);
-                    // apiResponse = "<h1>ceci est un text</h1>";
-                    //var pageWeb = JsonConvert.DeserializeObject<>(apiResponse);
+                    string apiResponse;
+                    SkytapModelToken skytapModelToken = await GetTokenDb(user.Email);
+                    EnviroVmUrl enviroVmUrl = await GetEnviroSkytap(user, skytapModelToken.api_token);
 
-                }
-            }
-            return apiResponse;
-        }
+                    using (var httpClient = new HttpClient())
+                    {
+                        var authString2 = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{user.Email}:{token}"));
+                        httpClient.DefaultRequestHeaders.Clear();
+                        httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", authString2);
 
+
+                        using (var response = await httpClient.GetAsync($"https://cloud.skytap.com/configurations/{enviroVmUrl.enviro}/desktop?vm_id={enviroVmUrl.vm}"))
+                        {
+                            apiResponse = await response.Content.ReadAsStringAsync();
+                        }
+                    }
+                    return apiResponse;
+                } */
+
+        /* Création de l'utilisateur */
         [AllowAnonymous]
         [HttpPost("/api/user")]
         public async Task<ActionResult<UserReadDto>> CreateUser(UserCreateDto user)
         {
+            /* Création de l'utilisateur dans la DB*/
+
             UserModel userModel = new UserModel();
             userModel.Password = user.Password;
             userModel.FirstName = user.FirstName;
             userModel.LastName = user.LastName;
 
-            Console.WriteLine("test4");
             var userMap = _mapper.Map<UserModel>(user);
-
-            Console.WriteLine("test5");
-            // Console.WriteLine("password " + user.Password);
             _repository.CreatUser(userMap);
-
-            Console.WriteLine("test6");
             _repository.SaveChanges();
-
-            Console.WriteLine("test7");
 
             var UserReadDto = _mapper.Map<UserReadDto>(userMap);
 
-            //tokenApi
+            //Génération Token
             AuthenticateModel authenticateModel = new AuthenticateModel
             {
                 Email = user.Email,
@@ -241,37 +224,28 @@ namespace AddvalsApi.Controllers
 
             UserModel userComplet = await Authenticate(authenticateModel);
 
-            //tokenApi
-
             //////////SkyTap//////////////
+            /* Création de l'utilisateur sur Skytap*/
+
             SkytapModelDeux sky = await addSkytap(user);
-            Console.WriteLine("test1");
             await UpdatePwdSkytap(sky.id, userModel);
-
-            Console.WriteLine("test2");
-            SkytapModelToken skytapModelToken = await GetToken(user);
-
-            Console.WriteLine("test3");
+            SkytapModelToken skytapModelToken = await GetToken(user); ;
             userComplet.TokenSkytap = skytapModelToken.api_token;
-            Console.WriteLine(" TOKEN SKYTAP1 " + skytapModelToken.api_token);
             userComplet.idSkytap = sky.id;
+            //////////SkyTap//////////////  
 
-            Console.WriteLine("TOKEN :" + user.TokenSkytap);
-            //////////SkyTap//////////////
-            Console.WriteLine("  TOKEN SKYTAP2 " + userComplet.TokenSkytap);
             await UpdateUser(userComplet);
-            //UserModel currentUser = await GetUserDb(user.Email);
 
+            /* Envoi Email à l'uilisateur pour la création de son compte*/
             String UrlChangePassword = $"http://localhost:4200/profil/{user.Email}";
             ActionResult actionResult = SendEmail(UrlChangePassword, user);
 
-            Console.WriteLine("Fin");
+            Console.WriteLine("Création de compte : OK");
 
             return Ok(sky);
-
-            //return CreatedAtRoute(nameof(GetUserById), new {Id = UserReadDto.Id}, UserReadDto); //Renvoi la route pour GetUserById
-            //return Ok(UserReadDto);
         }
+
+        /* MAJ du profil par l'utilisateur*/
         [HttpPut("/api/user")]
         public async Task<ActionResult> UpdateUser(UserModel userUpdater)
         {
@@ -284,51 +258,41 @@ namespace AddvalsApi.Controllers
 
             UserModel newUser = userToUpdate;
             newUser.Password = userUpdater.Password;
-            Console.WriteLine("New UpdateUser : " + newUser.Password);
             _mapper.Map(newUser, userToUpdate);
-
             _repository.UpdateUser(userToUpdate);
-
             _repository.SaveChanges();
 
-            // await UpdatePwdSkytap(newUser.idSkytap, newUser.Password);
-
             return Ok();
-
-            //return CreatedAtRoute(nameof(GetUserById), new { Id = userToUpdate.Id }, userToUpdate); //Renvoi la route pour GetUserById
         }
 
+        /* MAJ du profil par l'utilisateur*/
         [AllowAnonymous]
         [HttpPut("/api/user/profil")]
         public async Task<ActionResult> UpdatePasswordFinal(UserModel userChange)
         {
-            Console.WriteLine("1");
             UserModel userToUpdate = _repository.GetUserByEmail(userChange.Email);
-            Console.WriteLine("2");
 
             if (userToUpdate == null)
             {
                 return NotFound();
             }
-            Console.WriteLine("3");
-
+            /* MAJ du profil sur la DB*/
             UserModel newUser = userToUpdate;
             newUser.Password = userChange.Password;
             newUser.FirstName = userChange.FirstName;
             newUser.LastName = userChange.LastName;
-            Console.WriteLine("New " + newUser.Password);
+
             _mapper.Map(newUser, userToUpdate);
-            Console.WriteLine("4");
             _repository.UpdateUser(userToUpdate);
 
             _repository.SaveChanges();
 
+            /* MAJ du mot de passe sur Skytap*/
             await UpdatePwdSkytap(newUser.idSkytap, newUser);
 
             return Ok();
-
-            //return CreatedAtRoute(nameof(GetUserById), new { Id = userToUpdate.Id }, userToUpdate); //Renvoi la route pour GetUserById
         }
+        /* MAJ du profil sur la DB*/
         [HttpPut("/api/user/{id}")]
         public ActionResult UpdateUser(int id, UserUpdateDto user)
         {
@@ -348,6 +312,7 @@ namespace AddvalsApi.Controllers
             return CreatedAtRoute(nameof(GetUserById), new { Id = UserToUpdate.Id }, UserToUpdate); //Renvoi la route pour GetUserById
         }
 
+        /* Patch User */
         [HttpPatch("/api/user/{id}")]
         public ActionResult PartialUpdateUser(int id, JsonPatchDocument<UserUpdateDto> patchDoc)
         {
@@ -376,6 +341,7 @@ namespace AddvalsApi.Controllers
             return CreatedAtRoute(nameof(GetUserById), new { Id = UserToUpdate.Id }, UserToUpdate); //Renvoi la route pour GetUserById
         }
 
+        /* Suppression d'un User avec son ID Skytap*/
         [AllowAnonymous]
         public async Task<ActionResult<HttpResponseMessage>> DeleteUserSkytap(UserModel user)
         {
@@ -400,11 +366,10 @@ namespace AddvalsApi.Controllers
                 };
                 response = await httpClient.SendAsync(request);
             }
-            //Console.WriteLine(response);
-
             return Ok(response);
         }
 
+        /* Suppression d'un User dans la DB & Skytap*/
         [AllowAnonymous]
         [HttpDelete("/api/user/{id}")]
         public async Task<ActionResult> DeletUserUser(int id)
@@ -424,8 +389,7 @@ namespace AddvalsApi.Controllers
             return NoContent();
         }
 
-        ////////////////////////////////////////////////////////////////////////////////////SkyTap//////////////////////////////////////////////////////////////////////////////////////////////////
-
+        /* Création d'utilisateur sur Skytap*/
         [HttpPost]
         public async Task<SkytapModelDeux> addSkytap(UserCreateDto user)
         {
@@ -457,6 +421,7 @@ namespace AddvalsApi.Controllers
         }
 
 
+        /* MAJ de l'utilisateur sur Skytap*/
 
         [HttpPut]
         public async Task<SkytapModelDeux> UpdatePwdSkytap(string id, UserModel user)
@@ -468,31 +433,27 @@ namespace AddvalsApi.Controllers
 
                 httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
 
-                //Console.WriteLine($"https://cloud.skytap.com/users/{SkyRep.id}?password={password}");
                 using (var response = await httpClient.PutAsync($"https://cloud.skytap.com/users/{id}?password={user.Password}", null))
                 {
-                    //Console.WriteLine(response.StatusCode);
+
                     string apiResponse = await response.Content.ReadAsStringAsync();
-                    //Console.WriteLine(apiResponse);           
-                    // SkyRep = JsonConvert.DeserializeObject<SkytapModelDeux>(apiResponse);
+
                 }
                 using (var response = await httpClient.PutAsync($"https://cloud.skytap.com/users/{id}?first_name={user.Email}", null))
                 {
-                    //Console.WriteLine(response.StatusCode);
                     string apiResponse = await response.Content.ReadAsStringAsync();
-                    //Console.WriteLine(apiResponse);           
-                    // SkyRep = JsonConvert.DeserializeObject<SkytapModelDeux>(apiResponse);
+
                 }
                 using (var response = await httpClient.PutAsync($"https://cloud.skytap.com/users/{id}?password={user.Email}", null))
                 {
-                    //Console.WriteLine(response.StatusCode);
+
                     string apiResponse = await response.Content.ReadAsStringAsync();
-                    //Console.WriteLine(apiResponse);           
-                    // SkyRep = JsonConvert.DeserializeObject<SkytapModelDeux>(apiResponse);
+
                 }
             }
             return null;
         }
+        /* MAJ du statut de la machine en mode running*/
 
         [HttpPut]
         public async Task<SkytapModelDeux> UpdateStatsSkytap(UserCreateDto user, String enviro, String token)
@@ -510,23 +471,19 @@ namespace AddvalsApi.Controllers
 
                 StringContent content = new StringContent(JsonConvert.SerializeObject(skytapRunModel), Encoding.UTF8, "application/json");
 
-
                 using (var response = await httpClient.PutAsync($"https://cloud.skytap.com/configurations/{enviro}.json", content))
                 {
-                    //Console.WriteLine(response.StatusCode);
                     string apiResponse = await response.Content.ReadAsStringAsync();
-                    //Console.WriteLine(apiResponse);
-                    // SkyRep = JsonConvert.DeserializeObject<SkytapModelDeux>(apiResponse);
                 }
             }
             return null;
         }
 
+        /* Récupération du Token de l'utilisateur sur Skytap*/
         [AllowAnonymous]
         [HttpGet]
         public async Task<SkytapModelToken> GetToken(UserCreateDto user)
         {
-            //  SkytapModelDeux SkyRep;
             SkytapModelToken skytapModelToken;
 
             using (var httpClient = new HttpClient())
@@ -536,31 +493,27 @@ namespace AddvalsApi.Controllers
                 httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", authString);
                 httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
 
-                // StringContent content = new StringContent(JsonConvert.SerializeObject(), Encoding.UTF8, "application/json");
 
                 using (var response = await httpClient.GetAsync("https://cloud.skytap.com/account/api_token"))
                 {
-                    //Console.WriteLine(response.StatusCode);
                     string apiResponse = await response.Content.ReadAsStringAsync();
                     skytapModelToken = JsonConvert.DeserializeObject<SkytapModelToken>(apiResponse);
-                    //Console.WriteLine("token :" + apiResponse);
                 }
             }
             return skytapModelToken;
         }
 
+        /* Création de l'environnement sur Skytap*/
         [HttpPost]
         public async Task<SkytapDataEnviroModel> CreateEnviroSkytap(UserCreateDto user, string token)
         {
             SkytapDataEnviroModel skytapDataEnviroModel;
 
+            /* Création qui se base sur le le TEMPLATE qui possede un certain ID */
             var payload1 = new Dictionary<string, int>
             {
               {"template_id", 1899007},
             };
-
-
-            //Console.WriteLine(user.Email + "  " +token);
 
             using (var httpClient = new HttpClient())
             {
@@ -572,16 +525,14 @@ namespace AddvalsApi.Controllers
 
                 using (var response = await httpClient.PostAsync("https://cloud.skytap.com/configurations.json", content1))
                 {
-                    //Console.WriteLine(response.StatusCode);
                     string apiResponse = await response.Content.ReadAsStringAsync();
                     skytapDataEnviroModel = JsonConvert.DeserializeObject<SkytapDataEnviroModel>(apiResponse);
-                    //Console.WriteLine("enviro :" + apiResponse);
                 }
-
             }
             return skytapDataEnviroModel;
         }
 
+        /* Création de la machine partagé */
         [HttpPost]
         public async Task<string> CreateSharingSkytap(UserCreateDto user, string token, string enviro)
         {
@@ -611,6 +562,7 @@ namespace AddvalsApi.Controllers
             return "Ok";
         }
 
+        /* Récupère l'URL de la machine partagé */
         [HttpGet]
         public async Task<SharingUrl> GetSharing(UserCreateDto user, string token, string enviro)
         {
@@ -624,14 +576,9 @@ namespace AddvalsApi.Controllers
                 httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", authString);
                 httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
 
-                // StringContent content = new StringContent(JsonConvert.SerializeObject(), Encoding.UTF8, "application/json");
-
                 using (var response = await httpClient.GetAsync($"https://cloud.skytap.com/configurations/{enviro}/publish_sets.json"))
                 {
-
-                    // Console.WriteLine("get sharing = " + response.StatusCode);
                     string apiResponse = await response.Content.ReadAsStringAsync();
-                    //Console.WriteLine("GET SHARING API REPONSE" + apiResponse);
                     var list = JsonConvert.DeserializeObject<List<SkytapDataSharingModel>>(apiResponse);
 
                     foreach (var sha in list)
@@ -653,17 +600,6 @@ namespace AddvalsApi.Controllers
         [HttpPut]
         public async Task<SkytapModelDeux> UpdateAccesSharingSkytap(UserCreateDto user, string token, string enviro, string vm, string sharingId)
         {
-
-            /*             Access access = new Access();
-                        access.access = "run_and_use";
-                        Vm_ref vm_ref = new Vm_ref();
-                        vm_ref.vm_ref = $"https://cloud.skytap.com/vms/{vm}";
-
-                        Console.WriteLine($"https://cloud.skytap.com/vms/{vm}");
-                        UpdateAcces updateAcces = new UpdateAcces
-                        {
-                            vms = new Object[] { access, vm_ref }
-                        }; */
 
             var vmss = new Dictionary<string, string>
             {
@@ -695,10 +631,11 @@ namespace AddvalsApi.Controllers
             }
             return null;
         }
+
+        /*Suppresion de l'environnement*/
         [HttpDelete]
         public async Task<OkResult> DeleteEnviroSkytap(UserCreateDto user, string token, String enviro)
         {
-
             using (var httpClient = new HttpClient())
             {
                 var authString2 = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{user.Email}:{token}"));
@@ -707,26 +644,20 @@ namespace AddvalsApi.Controllers
 
                 using (var response = await httpClient.DeleteAsync($"https://cloud.skytap.com/configurations/{enviro}"))
                 {
-                    // Console.WriteLine(response.StatusCode);
-                    //Console.WriteLine($"https://cloud.skytap.com/configurations/{enviro}");
                     string apiResponse = await response.Content.ReadAsStringAsync();
-                    //var lalistIdEnviro = JsonConvert.DeserializeObject<List<EnviroIdModel>>(apiResponse);
-                    //Console.WriteLine(apiResponse);
                 }
             }
             return Ok();
         }
 
 
-
+        /* récupère les informations de l'environment  */
         [HttpGet]
         public async Task<EnviroVmUrl> GetEnviroSkytap(UserCreateDto user, string token)
         {
             //SkytapDataEnviroModel skytapDataEnviroModel;          
             EnviroIdModel enviro = new EnviroIdModel();
             String enviroId = "";
-
-            //Console.WriteLine(user.Email + " TOKEN " + token);
 
             using (var httpClient = new HttpClient())
             {
@@ -755,7 +686,7 @@ namespace AddvalsApi.Controllers
 
 
 
-
+        /* arret automatique (BETA) */
         [HttpPut]
         public async Task<SkytapModelDeux> shutdown_on_idle(UserCreateDto user, String enviro, String token)
         {
@@ -777,23 +708,19 @@ namespace AddvalsApi.Controllers
                 StringContent content = new StringContent(JsonConvert.SerializeObject(payload1), Encoding.UTF8, "application/json");
 
                 using (var response = await httpClient.PutAsync($"https://cloud.skytap.com/configurations/{enviro}.json", content))
-                {
-                    Console.WriteLine("atttenttionsdqsd = " + response.StatusCode);
+                {                  
                     string apiResponse = await response.Content.ReadAsStringAsync();
-                    // skytapDataEnviroModel = JsonConvert.DeserializeObject<SkytapDataEnviroModel>(apiResponse);
-                    //Console.WriteLine("enviro :" + apiResponse);
                 }
             }
             return null;
         }
 
+        /* récupère les informations de la machine virtuelle  */
         [HttpGet]
         public async Task<EnviroVmUrl> GetVmsSkytap(UserCreateDto user, string token, string enviro)
         {
             SkytapDataEnviroModel skytapDataEnviroModel;
             EnviroVmUrl enviroVmUrl = new EnviroVmUrl();
-
-            //Console.WriteLine(user.Email + "  " +token);
 
             using (var httpClient = new HttpClient())
             {
@@ -803,11 +730,8 @@ namespace AddvalsApi.Controllers
 
                 using (var response = await httpClient.GetAsync($"https://cloud.skytap.com/configurations/{enviro}.json"))
                 {
-                    //Console.WriteLine(response.StatusCode);
                     string apiResponse = await response.Content.ReadAsStringAsync();
                     skytapDataEnviroModel = JsonConvert.DeserializeObject<SkytapDataEnviroModel>(apiResponse);
-
-                    //Console.WriteLine("enviro :" + apiResponse);
 
                     string vm_id = "";
                     string l_url = "";
@@ -827,15 +751,13 @@ namespace AddvalsApi.Controllers
                     enviroVmUrl.vm = vm_id;
                     enviroVmUrl.url = l_url;
 
-                    //url_final = $"https://cloud.skytap.com/configurations/{enviro}/desktop?vm_id={vm_id}";
-                    // Console.WriteLine(url_final);
                 }
             }
             return enviroVmUrl;
         }
 
 
-
+        /* Envoi Email à l'uilisateur pour la création de son compte*/
         [HttpPost]
         public ActionResult SendEmail(string emailData, UserCreateDto user)
         {
@@ -855,19 +777,14 @@ namespace AddvalsApi.Controllers
 
                     -- Addvals
                     "
-
                 };
 
                 using (var client = new MailKit.Net.Smtp.SmtpClient())
                 {
-
                     client.Connect("smtp.gmail.com", 587, false);
-
                     //SMTP server authentication if needed
                     client.Authenticate("amphibibox2.0@gmail.com", "karim1302");
-
                     client.Send(message);
-
                     client.Disconnect(true);
                 }
             }

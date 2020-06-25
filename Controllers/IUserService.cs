@@ -14,14 +14,12 @@ namespace WebApi.Services
 {
     public interface IUserService
     {
-        UserModel Authenticate(string login, string password);
-       
+        UserModel Authenticate(string login, string password);    
     }
 
     public class UserService : IUserService
     {
         // users hardcoded for simplicity, store in a db with hashed passwords in production applications
-
         private readonly AppSettings _appSettings;
         private readonly IUserRepo _repository;
 
@@ -32,9 +30,7 @@ namespace WebApi.Services
         }
 
         public UserModel Authenticate(string email, string password)
-        {
-          
-            //var user = _users.SingleOrDefault(x => x.Login == login && x.Password == password);
+        {   
             UserModel user =_repository.GetUserByEmailAndPassword(email,password);
 
             // return null if user not found
