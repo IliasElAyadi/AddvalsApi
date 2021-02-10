@@ -15,6 +15,10 @@ namespace AddvalsApi.Dtos
 
         public string LastName { get; set; }
 
+        public string Company { get; set; }
+
+        public string Group { get; set; }
+
         public string tokenApi { get; set; }
         public string TokenSkytap { get; set; }
         public string idSkytap { get; set; }

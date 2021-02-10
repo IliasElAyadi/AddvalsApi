@@ -1,12 +1,13 @@
 {
   "version": 2,
-  "dgSpecHash": "ACFhCNEOJaCvrl7T/EryORF6CdA/jk7d/gG/t2VllcftZk20Zqnsp80Y9k7sHJAkSHqgOmdxzX99M/gj2ZyT1Q==",
+  "dgSpecHash": "kOG6POJxMM/VWZstJBlHg+89/x0+FV4l2/LctTc9dVsAV0XusaDVBLEVbopoxT8pdr+KECrUEofy+1egGbrIBg==",
   "success": true,
   "projectFilePath": "C:\\GitHub\\AddvalsApi\\AddvalsApi.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\El Ayadi Ilias\\.nuget\\packages\\automapper\\9.0.0\\automapper.9.0.0.nupkg.sha512",
     "C:\\Users\\El Ayadi Ilias\\.nuget\\packages\\automapper.extensions.microsoft.dependencyinjection\\7.0.0\\automapper.extensions.microsoft.dependencyinjection.7.0.0.nupkg.sha512",
     "C:\\Users\\El Ayadi Ilias\\.nuget\\packages\\mailkit\\2.6.0\\mailkit.2.6.0.nupkg.sha512",
+    "C:\\Users\\El Ayadi Ilias\\.nuget\\packages\\microsoft.aspnetcore.authentication.certificate\\3.1.10\\microsoft.aspnetcore.authentication.certificate.3.1.10.nupkg.sha512",
     "C:\\Users\\El Ayadi Ilias\\.nuget\\packages\\microsoft.aspnetcore.authentication.google\\3.1.4\\microsoft.aspnetcore.authentication.google.3.1.4.nupkg.sha512",
     "C:\\Users\\El Ayadi Ilias\\.nuget\\packages\\microsoft.aspnetcore.authentication.jwtbearer\\3.1.4\\microsoft.aspnetcore.authentication.jwtbearer.3.1.4.nupkg.sha512",
     "C:\\Users\\El Ayadi Ilias\\.nuget\\packages\\microsoft.aspnetcore.cors\\2.2.0\\microsoft.aspnetcore.cors.2.2.0.nupkg.sha512",

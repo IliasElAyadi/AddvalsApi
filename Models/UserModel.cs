@@ -18,20 +18,26 @@ namespace AddvalsApi.Model
         [Required]
         public string Email { get; set; }
 
-        [Required]
+        //[Required]
         public string FirstName { get; set; }
 
-        [Required]
+        //[Required]
         public string LastName { get; set; }
 
         [Required]
         public string TokenApi { get; set; }
 
         [Required]
+        public string Company { get; set; }
+
+        [Required]
+        public string Group { get; set; }
+
+        [Required]
         public string TokenSkytap { get; set; }
 
         public string idSkytap { get; set; }
 
-      
+
     }
 }

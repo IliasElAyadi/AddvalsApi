@@ -5,7 +5,7 @@ using AddvalsApi.Model;
 using AutoMapper;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
-
+using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Http;
 using System.Net.Http;
 using Newtonsoft.Json;
@@ -19,6 +19,9 @@ using MailKit.Net.Smtp;
 using MimeKit;
 using Microsoft.AspNetCore.Authorization;
 using WebApi.Services;
+using System.IdentityModel.Tokens.Jwt;
+using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
 
 namespace AddvalsApi.Controllers
 {
@@ -31,30 +34,110 @@ namespace AddvalsApi.Controllers
         private readonly IUserRepo _repository;
         private readonly IMapper _mapper;
         private IUserService _userService;
+        private readonly AppSettings _appSettings;
 
-        public UsersController(IUserRepo repository, IMapper mapper, IUserService userService)
+
+        public UsersController(IUserRepo repository, IMapper mapper, IUserService userService, IOptions<AppSettings> appSettings)
         {
             _repository = repository;
             _mapper = mapper;
             _userService = userService;
+            _appSettings = appSettings.Value;
+
         }
 
         /* Authentication */
         [AllowAnonymous]
         [HttpPost("/api/user/authenticate")]
-        public async Task<UserModel> Authenticate([FromBody] AuthenticateModel model)
+        public async Task<IActionResult> AuthenticateAsync([FromBody] AuthenticateModel model)
         {
-            var user = _userService.Authenticate(model.Email, model.password);
-
+            UserModel user = _userService.Authenticate(model.Email, model.password);
             if (user == null)
             {
-                //return BadRequest(new { message = "Username or password is incorrect" });
+                return BadRequest(new { message = "Username or password is incorrect" });
             }
-            return user;
+
+            if (model.Email == "Adminaddvals1" && model.password == "Adminaddvals1")
+            {
+                // authentication successful so generate jwt token
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var key = Encoding.ASCII.GetBytes(_appSettings.Secret);
+                var tokenDescriptor = new SecurityTokenDescriptor
+                {
+                    Subject = new ClaimsIdentity(new Claim[]
+                {
+                    new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                    new Claim(ClaimTypes.Email, user.Email.ToString()),
+                    new Claim(ClaimTypes.Name, user.FirstName.ToString() +" "+ user.LastName.ToString()),
+                    new Claim(ClaimTypes.Role, "Admin"),
+                    }),
+                    Expires = DateTime.UtcNow.AddHours(24),
+                    SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+                };
+                var token = tokenHandler.CreateToken(tokenDescriptor);
+                user.TokenApi = tokenHandler.WriteToken(token);
+                //Console.WriteLine(user.TokenApi);
+                UserModel user1 = await GetUserDb(user.Email);
+                UserCreateDto userCreateDto = new UserCreateDto();
+                userCreateDto.Password = user1.Password;
+                userCreateDto.FirstName = user1.FirstName;
+                userCreateDto.LastName = user1.LastName;
+                userCreateDto.Company = user1.Company;
+                userCreateDto.Group = user1.Group;
+                userCreateDto.Email = user1.Email;
+                userCreateDto.TokenApi = user1.TokenApi;
+                userCreateDto.idSkytap = user1.idSkytap;
+                
+                await UpdateUser(userCreateDto);
+
+                //await UserSignIn(userCreateDto);
+
+                return Ok(new { Token = user.TokenApi });
+            }
+            else
+            {
+                // authentication successful so generate jwt token
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var key = Encoding.ASCII.GetBytes(_appSettings.Secret);
+                var tokenDescriptor = new SecurityTokenDescriptor
+                {
+                    Subject = new ClaimsIdentity(new Claim[]
+                {
+                    new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                    new Claim(ClaimTypes.Email, user.Email.ToString()),
+                    new Claim(ClaimTypes.Name, user.FirstName.ToString() +" "+ user.LastName.ToString()),
+                    new Claim(ClaimTypes.Role, "User"),
+                    }),
+                    Expires = DateTime.UtcNow.AddHours(24),
+                    SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+                };
+                var token = tokenHandler.CreateToken(tokenDescriptor);
+
+                user.TokenApi = tokenHandler.WriteToken(token);
+                //Console.WriteLine(user.TokenApi);
+                UserModel user1 = await GetUserDb(user.Email);
+                UserCreateDto userCreateDto = new UserCreateDto();
+                userCreateDto.Password = user1.Password;
+                userCreateDto.FirstName = user1.FirstName;
+                userCreateDto.LastName = user1.LastName;
+                userCreateDto.Company = user1.Company;
+                userCreateDto.Group = user1.Group;
+                userCreateDto.Email = user1.Email;
+                userCreateDto.TokenApi = user1.TokenApi;
+                userCreateDto.idSkytap = user1.idSkytap;
+
+                await UpdateUser(userCreateDto);
+
+                string urlFinal = await UserSignIn(userCreateDto);
+
+                return Ok(new { Token = user.TokenApi, urlFinal });
+                //return Ok($"{{\"url\":\"{urlFinal}\"}}");
+            }
+
         }
 
         /* Récupère tous les utilisateurs */
-        [AllowAnonymous]
+        [Authorize(Roles = "Admin")]
         [HttpGet("/api/user")]
         public ActionResult<IEnumerable<UserReadDto>> GetAllUsers()
         {
@@ -114,17 +197,8 @@ namespace AddvalsApi.Controllers
         /* Connexion de l'utilisateur*/
         [AllowAnonymous]
         [HttpPost("/api/user/signin")]
-        public async Task<ActionResult<string>> UserSignIn(UserCreateDto user)
+        public async Task<string> UserSignIn(UserCreateDto user)
         {
-            AuthenticateModel authenticateModel = new AuthenticateModel
-            {
-                Email = user.Email,
-                password = user.Password
-            };
-
-            UserModel userComplet = await Authenticate(authenticateModel);
-
-
             SkytapModelToken skytapModelToken = await GetTokenDb(user.Email);
             user.Email = user.Email + "addvals";
             user.Login = user.Email;
@@ -170,7 +244,9 @@ namespace AddvalsApi.Controllers
             Console.WriteLine("URL : " + urlFinal.url);
             Console.WriteLine("-----------------------------------------");
 
-            return Ok($"{{\"url\":\"{urlFinal.url}\"}}");
+            return urlFinal.url;
+
+            // return Ok();
 
         }
 
@@ -206,8 +282,12 @@ namespace AddvalsApi.Controllers
 
             UserModel userModel = new UserModel();
             userModel.Password = user.Password;
+            userModel.Email = user.Email;
             userModel.FirstName = user.FirstName;
             userModel.LastName = user.LastName;
+            userModel.Company = user.Company;
+            userModel.Group = user.Group;
+
 
             var userMap = _mapper.Map<UserModel>(user);
             _repository.CreatUser(userMap);
@@ -215,26 +295,27 @@ namespace AddvalsApi.Controllers
 
             var UserReadDto = _mapper.Map<UserReadDto>(userMap);
 
-            //Génération Token
-            AuthenticateModel authenticateModel = new AuthenticateModel
-            {
-                Email = user.Email,
-                password = user.Password
-            };
-
-            UserModel userComplet = await Authenticate(authenticateModel);
 
             //////////SkyTap//////////////
             /* Création de l'utilisateur sur Skytap*/
 
             SkytapModelDeux sky = await addSkytap(user);
             await UpdatePwdSkytap(sky.id, userModel);
-            SkytapModelToken skytapModelToken = await GetToken(user); ;
-            userComplet.TokenSkytap = skytapModelToken.api_token;
-            userComplet.idSkytap = sky.id;
+            //await CreateToken(user);
+            //SkytapModelToken skytapModelToken = await GetToken(user); ;
+            //Console.WriteLine("token 1" + skytapModelToken.api_token);
+
+            //Console.WriteLine("ID SKYTAP = " + sky.id);
+            //user.TokenSkytap = skytapModelToken.api_token;
+
+            //userModel.TokenSkytap = skytapModelToken.api_token;
+            user.idSkytap = sky.id;
+            userModel.idSkytap = sky.id;
+
+            //Console.WriteLine("token 2" + userModel.TokenSkytap);
             //////////SkyTap//////////////  
 
-            await UpdateUser(userComplet);
+            await UpdateUser(user);
 
             /* Envoi Email à l'uilisateur pour la création de son compte*/
             String UrlChangePassword = $"http://localhost:4200/profil/{user.Email}";
@@ -242,12 +323,12 @@ namespace AddvalsApi.Controllers
 
             Console.WriteLine("Création de compte : OK");
 
-            return Ok(sky);
+            return Ok(/*sky*/);
         }
 
         /* MAJ du profil par l'utilisateur*/
         [HttpPut("/api/user")]
-        public async Task<ActionResult> UpdateUser(UserModel userUpdater)
+        public async Task<ActionResult> UpdateUser(UserCreateDto userUpdater)
         {
             UserModel userToUpdate = _repository.GetUserByEmail(userUpdater.Email);
 
@@ -258,6 +339,8 @@ namespace AddvalsApi.Controllers
 
             UserModel newUser = userToUpdate;
             newUser.Password = userUpdater.Password;
+           // newUser.idSkytap = userUpdater.idSkytap;
+
             _mapper.Map(newUser, userToUpdate);
             _repository.UpdateUser(userToUpdate);
             _repository.SaveChanges();
@@ -279,9 +362,6 @@ namespace AddvalsApi.Controllers
             /* MAJ du profil sur la DB*/
             UserModel newUser = userToUpdate;
             newUser.Password = userChange.Password;
-            newUser.FirstName = userChange.FirstName;
-            newUser.LastName = userChange.LastName;
-
             _mapper.Map(newUser, userToUpdate);
             _repository.UpdateUser(userToUpdate);
 
@@ -354,7 +434,7 @@ namespace AddvalsApi.Controllers
             HttpResponseMessage response;
             using (var httpClient = new HttpClient())
             {
-                var authString2 = Convert.ToBase64String(Encoding.UTF8.GetBytes("elayadi.ilias@gmail.com:3e6d13cc03d0276a48619440f61f6269cf238ed0"));
+                var authString2 = Convert.ToBase64String(Encoding.UTF8.GetBytes("elayadi.ilias@gmail.com:karim1302"));
                 httpClient.DefaultRequestHeaders.Clear();
                 httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", authString2);
 
@@ -404,7 +484,7 @@ namespace AddvalsApi.Controllers
 
             using (var httpClient = new HttpClient())
             {
-                var authString = Convert.ToBase64String(Encoding.UTF8.GetBytes("elayadi.ilias@gmail.com:3e6d13cc03d0276a48619440f61f6269cf238ed0"));
+                var authString = Convert.ToBase64String(Encoding.UTF8.GetBytes("elayadi.ilias@gmail.com:karim1302"));
                 httpClient.DefaultRequestHeaders.Clear();
                 httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", authString);
                 httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
@@ -415,6 +495,7 @@ namespace AddvalsApi.Controllers
                 {
                     string apiResponse = await response.Content.ReadAsStringAsync();
                     SkyRep = JsonConvert.DeserializeObject<SkytapModelDeux>(apiResponse);
+                    //Console.WriteLine("REGARDE ICI" + apiResponse);
                 }
             }
             return SkyRep;
@@ -426,9 +507,11 @@ namespace AddvalsApi.Controllers
         [HttpPut]
         public async Task<SkytapModelDeux> UpdatePwdSkytap(string id, UserModel user)
         {
+
+            Console.WriteLine(" CurrentUser = " + user.Email + "addvals" + " / " + user.Password);
             using (var httpClient = new HttpClient())
             {
-                var authString = Convert.ToBase64String(Encoding.UTF8.GetBytes("elayadi.ilias@gmail.com:3e6d13cc03d0276a48619440f61f6269cf238ed0"));
+                var authString = Convert.ToBase64String(Encoding.UTF8.GetBytes("elayadi.ilias@gmail.com:karim1302"));
                 httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", authString);
 
                 httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
@@ -441,12 +524,6 @@ namespace AddvalsApi.Controllers
                 }
                 using (var response = await httpClient.PutAsync($"https://cloud.skytap.com/users/{id}?first_name={user.Email}", null))
                 {
-                    string apiResponse = await response.Content.ReadAsStringAsync();
-
-                }
-                using (var response = await httpClient.PutAsync($"https://cloud.skytap.com/users/{id}?password={user.Email}", null))
-                {
-
                     string apiResponse = await response.Content.ReadAsStringAsync();
 
                 }
@@ -464,7 +541,7 @@ namespace AddvalsApi.Controllers
             };
             using (var httpClient = new HttpClient())
             {
-                var authString = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{user.Email}:{token}"));
+                var authString = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{user.Email}:{user.Password}"));
                 httpClient.DefaultRequestHeaders.Clear();
                 httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", authString);
                 httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
@@ -489,6 +566,8 @@ namespace AddvalsApi.Controllers
             using (var httpClient = new HttpClient())
             {
                 var authString = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{user.Email}addvals:{user.Password}"));
+                Console.WriteLine("lors de la recup du token MAIL + MDP " + user.Email + "addvals : " + user.Password);
+
                 httpClient.DefaultRequestHeaders.Clear();
                 httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", authString);
                 httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
@@ -498,9 +577,38 @@ namespace AddvalsApi.Controllers
                 {
                     string apiResponse = await response.Content.ReadAsStringAsync();
                     skytapModelToken = JsonConvert.DeserializeObject<SkytapModelToken>(apiResponse);
+
+                    Console.WriteLine("Apres creation la recup" + apiResponse);
                 }
             }
             return skytapModelToken;
+        }
+
+        /* Création du token sur Skytap*/
+        [HttpPost]
+        public async Task<string> CreateToken(UserCreateDto user)
+        {
+            var payload1 = new Dictionary<string, string>
+                    {
+                    {$"{user.Email}addvals", user.Password},
+                    };
+
+            using (var httpClient = new HttpClient())
+            {
+                var authString = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{user.Email}addvals:{user.Password}"));
+                //Console.WriteLine("lors de la creation du token : MAIL + MDP " + $"{user.Email}addvals:{user.Password}");
+                httpClient.DefaultRequestHeaders.Clear();
+                httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", authString);
+
+                StringContent content1 = new StringContent(JsonConvert.SerializeObject(payload1), Encoding.UTF8, "application/json");
+
+                using (var response = await httpClient.PostAsync("https://cloud.skytap.com/v2/account/api_tokens.json", null))
+                {
+                    string apiResponse = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine("creation du token" + apiResponse);
+                }
+            }
+            return "ok";
         }
 
         /* Création de l'environnement sur Skytap*/
@@ -509,15 +617,31 @@ namespace AddvalsApi.Controllers
         {
             SkytapDataEnviroModel skytapDataEnviroModel;
 
-            /* Création qui se base sur le le TEMPLATE qui possede un certain ID */
-            var payload1 = new Dictionary<string, int>
+            /* Création qui se base sur le le TEMPLATE qui possede un certain ID  1911559 */
+
+            var payload1 = new Dictionary<string, int>{};
+
+            if (user.Group == "1")
             {
-              {"template_id", 1899007},
-            };
+                payload1.Add("template_id", 1911559);
+                Console.WriteLine("template_id g1, 1911559");
+              
+            }
+            else if (user.Group == "2" || user.Group == "3" || user.Group == "4")
+            {
+                // var payload1 = new Dictionary<string, int>
+                // {
+                //    {"template_id", 1899007},
+                // };
+
+                 payload1.Add("template_id", 1899007);
+                 Console.WriteLine("template_id g:2-3-4, 1899007");
+            }
+
 
             using (var httpClient = new HttpClient())
             {
-                var authString2 = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{user.Email}:{token}"));
+                var authString2 = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{user.Email}:{user.Password}"));
                 httpClient.DefaultRequestHeaders.Clear();
                 httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", authString2);
 
@@ -543,7 +667,7 @@ namespace AddvalsApi.Controllers
 
             using (var httpClient = new HttpClient())
             {
-                var authString = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{user.Email}:{token}"));
+                var authString = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{user.Email}:{user.Password}"));
                 httpClient.DefaultRequestHeaders.Clear();
                 httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", authString);
                 httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
@@ -571,7 +695,7 @@ namespace AddvalsApi.Controllers
 
             using (var httpClient = new HttpClient())
             {
-                var authString = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{user.Email}:{token}"));
+                var authString = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{user.Email}:{user.Password}"));
                 httpClient.DefaultRequestHeaders.Clear();
                 httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", authString);
                 httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
@@ -615,7 +739,7 @@ namespace AddvalsApi.Controllers
 
             using (var httpClient = new HttpClient())
             {
-                var authString = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{user.Email}:{token}"));
+                var authString = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{user.Email}:{user.Password}"));
                 httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", authString);
                 httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
 
@@ -638,7 +762,7 @@ namespace AddvalsApi.Controllers
         {
             using (var httpClient = new HttpClient())
             {
-                var authString2 = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{user.Email}:{token}"));
+                var authString2 = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{user.Email}:{user.Password}"));
                 httpClient.DefaultRequestHeaders.Clear();
                 httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", authString2);
 
@@ -661,7 +785,7 @@ namespace AddvalsApi.Controllers
 
             using (var httpClient = new HttpClient())
             {
-                var authString2 = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{user.Email}:{token}"));
+                var authString2 = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{user.Email}:{user.Password}"));
                 httpClient.DefaultRequestHeaders.Clear();
                 httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", authString2);
 
@@ -700,7 +824,7 @@ namespace AddvalsApi.Controllers
 
             using (var httpClient = new HttpClient())
             {
-                var authString = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{user.Email}:{token}"));
+                var authString = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{user.Email}:{user.Password}"));
                 httpClient.DefaultRequestHeaders.Clear();
                 httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", authString);
                 httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
@@ -708,7 +832,7 @@ namespace AddvalsApi.Controllers
                 StringContent content = new StringContent(JsonConvert.SerializeObject(payload1), Encoding.UTF8, "application/json");
 
                 using (var response = await httpClient.PutAsync($"https://cloud.skytap.com/configurations/{enviro}.json", content))
-                {                  
+                {
                     string apiResponse = await response.Content.ReadAsStringAsync();
                 }
             }
@@ -724,7 +848,7 @@ namespace AddvalsApi.Controllers
 
             using (var httpClient = new HttpClient())
             {
-                var authString2 = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{user.Email}:{token}"));
+                var authString2 = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{user.Email}:{user.Password}"));
                 httpClient.DefaultRequestHeaders.Clear();
                 httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", authString2);
 
@@ -769,7 +893,7 @@ namespace AddvalsApi.Controllers
                 message.Subject = "Création de votre profil";
                 message.Body = new TextPart("plain")
                 {
-                    Text = $@"Hey {user.Email}
+                    Text = $@"Cher Monsieur/Madame {user.LastName}
                     
                     Votre nom d'utilisateur est {user.Email}
 

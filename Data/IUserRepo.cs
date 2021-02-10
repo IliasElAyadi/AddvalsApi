@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using AddvalsApi.Dtos;
 using AddvalsApi.Model;
 
 namespace AddvalsApi.Data

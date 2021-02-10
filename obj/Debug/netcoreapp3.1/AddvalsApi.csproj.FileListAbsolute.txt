@@ -125,3 +125,4 @@ C:\GitHub\AddvalsApi\bin\Debug\netcoreapp3.1\Microsoft.IdentityModel.Protocols.d
 C:\GitHub\AddvalsApi\bin\Debug\netcoreapp3.1\Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
 C:\GitHub\AddvalsApi\bin\Debug\netcoreapp3.1\Microsoft.IdentityModel.Tokens.dll
 C:\GitHub\AddvalsApi\bin\Debug\netcoreapp3.1\System.IdentityModel.Tokens.Jwt.dll
+C:\GitHub\AddvalsApi\bin\Debug\netcoreapp3.1\Microsoft.AspNetCore.Authentication.Certificate.dll

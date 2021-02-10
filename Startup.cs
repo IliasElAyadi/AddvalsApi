@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using AddvalsApi.Data;
 using AddvalsApi.Model;
 using AutoMapper;
+using Microsoft.AspNetCore.Authentication.Certificate;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -36,8 +37,9 @@ namespace AddvalsApi
         public void ConfigureServices(IServiceCollection services)
         {
 
-
-
+            services.AddAuthentication(
+        CertificateAuthenticationDefaults.AuthenticationScheme)
+        .AddCertificate();
 
             // configure strongly typed settings objects
             var appSettingsSection = Configuration.GetSection("AppSettings");
@@ -66,14 +68,6 @@ namespace AddvalsApi
 
             // configure DI for application services
             services.AddScoped<IUserService, UserService>();
-
-
-
-
-
-
-
-
 
             services.AddCors(options => options.AddPolicy("ApiCorsPolicy", build =>
             {
@@ -105,7 +99,7 @@ namespace AddvalsApi
             app.UseCors("ApiCorsPolicy");
 
             app.UseHttpsRedirection();
-
+            app.UseAuthentication();
             app.UseRouting();
 
             /////////////
