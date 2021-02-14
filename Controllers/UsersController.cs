@@ -87,7 +87,7 @@ namespace AddvalsApi.Controllers
                 userCreateDto.Email = user1.Email;
                 userCreateDto.TokenApi = user1.TokenApi;
                 userCreateDto.idSkytap = user1.idSkytap;
-                
+
                 await UpdateUser(userCreateDto);
 
                 //await UserSignIn(userCreateDto);
@@ -114,7 +114,7 @@ namespace AddvalsApi.Controllers
                 var token = tokenHandler.CreateToken(tokenDescriptor);
 
                 user.TokenApi = tokenHandler.WriteToken(token);
-                //Console.WriteLine(user.TokenApi);
+                
                 UserModel user1 = await GetUserDb(user.Email);
                 UserCreateDto userCreateDto = new UserCreateDto();
                 userCreateDto.Password = user1.Password;
@@ -125,10 +125,11 @@ namespace AddvalsApi.Controllers
                 userCreateDto.Email = user1.Email;
                 userCreateDto.TokenApi = user1.TokenApi;
                 userCreateDto.idSkytap = user1.idSkytap;
-
+                
                 await UpdateUser(userCreateDto);
-
+                
                 string urlFinal = await UserSignIn(userCreateDto);
+                
 
                 return Ok(new { Token = user.TokenApi, urlFinal });
                 //return Ok($"{{\"url\":\"{urlFinal}\"}}");
@@ -206,23 +207,33 @@ namespace AddvalsApi.Controllers
             try
             {
                 /* récupère l'enviro si il existe, le supprime et en crée un nouveau */
+                
                 EnviroVmUrl enviroEtVm1 = await GetEnviroSkytap(user, skytapModelToken.api_token);
+                
+
                 await DeleteEnviroSkytap(user, skytapModelToken.api_token, enviroEtVm1.enviro);
+                
+
                 SkytapDataEnviroModel skytapDataEnviroModel = await CreateEnviroSkytap(user, skytapModelToken.api_token);
+                
+
                 Console.WriteLine("GET/DELETE/CREATE");
             }
             catch (System.Exception)
             {
+               
                 /* création d'environnement */
                 SkytapDataEnviroModel skytapDataEnviroModel = await CreateEnviroSkytap(user, skytapModelToken.api_token);
-                Console.WriteLine("/CREATE");
+              
             }
-
+           
             /* récupère les informations de l'environnement */
             EnviroVmUrl enviroVmUrl = await GetEnviroSkytap(user, skytapModelToken.api_token);
+
             /* arret automatique (BETA) */
-            await shutdown_on_idle(user, enviroVmUrl.enviro, skytapModelToken.api_token);
+            //await shutdown_on_idle(user, enviroVmUrl.enviro, skytapModelToken.api_token);
             /* Lancement de la machine */
+            //Console.WriteLine("/UpdateStatsSkytap");
             await UpdateStatsSkytap(user, enviroVmUrl.enviro, skytapModelToken.api_token);
 
             Console.WriteLine("-----------------------------------------");
@@ -288,13 +299,11 @@ namespace AddvalsApi.Controllers
             userModel.Company = user.Company;
             userModel.Group = user.Group;
 
-
             var userMap = _mapper.Map<UserModel>(user);
             _repository.CreatUser(userMap);
             _repository.SaveChanges();
 
             var UserReadDto = _mapper.Map<UserReadDto>(userMap);
-
 
             //////////SkyTap//////////////
             /* Création de l'utilisateur sur Skytap*/
@@ -339,7 +348,7 @@ namespace AddvalsApi.Controllers
 
             UserModel newUser = userToUpdate;
             newUser.Password = userUpdater.Password;
-           // newUser.idSkytap = userUpdater.idSkytap;
+            newUser.idSkytap = userUpdater.idSkytap;
 
             _mapper.Map(newUser, userToUpdate);
             _repository.UpdateUser(userToUpdate);
@@ -362,6 +371,7 @@ namespace AddvalsApi.Controllers
             /* MAJ du profil sur la DB*/
             UserModel newUser = userToUpdate;
             newUser.Password = userChange.Password;
+            newUser.idSkytap = userToUpdate.idSkytap;
             _mapper.Map(newUser, userToUpdate);
             _repository.UpdateUser(userToUpdate);
 
@@ -495,7 +505,6 @@ namespace AddvalsApi.Controllers
                 {
                     string apiResponse = await response.Content.ReadAsStringAsync();
                     SkyRep = JsonConvert.DeserializeObject<SkytapModelDeux>(apiResponse);
-                    //Console.WriteLine("REGARDE ICI" + apiResponse);
                 }
             }
             return SkyRep;
@@ -508,7 +517,7 @@ namespace AddvalsApi.Controllers
         public async Task<SkytapModelDeux> UpdatePwdSkytap(string id, UserModel user)
         {
 
-            Console.WriteLine(" CurrentUser = " + user.Email + "addvals" + " / " + user.Password);
+            Console.WriteLine("CurrentUser = " + user.Email + "addvals" + " / " + user.Password);
             using (var httpClient = new HttpClient())
             {
                 var authString = Convert.ToBase64String(Encoding.UTF8.GetBytes("elayadi.ilias@gmail.com:karim1302"));
@@ -619,13 +628,13 @@ namespace AddvalsApi.Controllers
 
             /* Création qui se base sur le le TEMPLATE qui possede un certain ID  1911559 */
 
-            var payload1 = new Dictionary<string, int>{};
+            var payload1 = new Dictionary<string, int> { };
 
             if (user.Group == "1")
             {
                 payload1.Add("template_id", 1911559);
                 Console.WriteLine("template_id g1, 1911559");
-              
+
             }
             else if (user.Group == "2" || user.Group == "3" || user.Group == "4")
             {
@@ -634,8 +643,8 @@ namespace AddvalsApi.Controllers
                 //    {"template_id", 1899007},
                 // };
 
-                 payload1.Add("template_id", 1899007);
-                 Console.WriteLine("template_id g:2-3-4, 1899007");
+                payload1.Add("template_id", 1899007);
+                Console.WriteLine("template_id : 1899007 ");
             }
 
 
@@ -782,18 +791,19 @@ namespace AddvalsApi.Controllers
             //SkytapDataEnviroModel skytapDataEnviroModel;          
             EnviroIdModel enviro = new EnviroIdModel();
             String enviroId = "";
-
+            //Console.WriteLine("IDSKY " + user.idSkytap);
             using (var httpClient = new HttpClient())
             {
+                //Console.WriteLine( user.Email + " " + user.Password);
                 var authString2 = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{user.Email}:{user.Password}"));
                 httpClient.DefaultRequestHeaders.Clear();
                 httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", authString2);
 
                 using (var response = await httpClient.GetAsync("https://cloud.skytap.com/configurations.json"))
                 {
-                    //Console.WriteLine(response.StatusCode);
+                    //Console.WriteLine( response.StatusCode);
                     string apiResponse = await response.Content.ReadAsStringAsync();
-                    //Console.WriteLine(apiResponse);
+                    //Console.WriteLine( apiResponse);
                     var lalistIdEnviro = JsonConvert.DeserializeObject<List<EnviroIdModel>>(apiResponse);
 
                     foreach (var envir in lalistIdEnviro)
